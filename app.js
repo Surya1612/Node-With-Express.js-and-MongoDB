@@ -12,6 +12,7 @@ var usersRouter = require('./routes/users');
 var dishRouter = require('./routes/dishRouter');
 var promotionRouter = require('./routes/promotionRouter');
 var leaderRouter = require('./routes/leaderRouter');
+const { error } = require('console');
 
 const url = 'mongodb://0.0.0.0:27017/conFusion';
 const connect = mongoose.connect(url);
@@ -31,6 +32,35 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+function auth(req,res,next){
+  var authHeader = req.headers.authorization;
+
+  if(!authHeader){
+
+    var err = new Error('You are not authenticated!');
+    res.setHeader('WWW-Authenticate', 'Basic');
+    err.status=401;
+    next(err);
+    return;
+  }
+  var auth=new Buffer(authHeader.split(' ')[1],'base64').toString().split(':');
+  var user=auth[0];
+  var pass=auth[1];
+console.log(user+" "+pass)
+  if(user==="admin" && pass==="password"){
+    next();
+  }else{
+    var err = new Error('You are not authenticated!');
+    res.setHeader('WWW-Authenticate', 'Basic');
+    err.status=401;
+    next(err);
+    return;
+  }
+}
+
+app.use(auth)
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
